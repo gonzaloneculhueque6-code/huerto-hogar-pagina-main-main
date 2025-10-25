@@ -1,0 +1,93 @@
+/* Definimos la altura de la barra de navegación como una variable CSS 
+  para reutilizarla en el padding del contenido.*/
+:root {
+  --navbar-height: 60px;
+}
+
+/* Estilo para el contenedor principal de la página */
+.admin-container {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+
+.admin-navbar {
+  height: var(--navbar-height);
+  z-index: 1020;
+}
+
+
+.admin-content-area {
+  padding-top: var(--navbar-height);
+  padding-right: 1.5rem;
+  padding-bottom: 1.5rem;
+  padding-left: 1.5rem;
+}
+
+/* --- Estilos del Dashboard (KPI Cards) --- */
+
+.kpi-card-compras {
+  background-color: #007bff;
+}
+
+.kpi-card-productos {
+  background-color: #28a745;
+}
+
+.kpi-card-usuarios {
+  background-color: #ffc107;
+}
+
+/* --- Estilos del Dashboard (Tarjetas de Acción Rápida) --- */
+
+.action-card {
+  cursor: pointer;
+  /* Transición suave para el efecto hover */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.action-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+
+
+/*Botones rojos*/
+
+
+.btn-rojo {
+
+  background-color: #dc3545; 
+  color: #ffffff;            
+
+  font-family: 'Montserrat', sans-serif;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+  
+  /* Propiedades extra para asegurar consistencia */
+  font-size: 1rem;     /* 16px por defecto */
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.5;  /* Altura de línea estándar */
+}
+
+/* Efecto al pasar el mouse por encima (hover) */
+.btn-rojo:hover {
+  background-color: #c82333; /* Rojo un poco más oscuro */
+}
+
+/* Efecto al hacer clic (active) */
+.btn-rojo:active {
+  background-color: #bd2130;
+}
+
+/* Estilo para cuando el botón está deshabilitado */
+.btn-rojo:disabled {
+  background-color: #e68e96;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
