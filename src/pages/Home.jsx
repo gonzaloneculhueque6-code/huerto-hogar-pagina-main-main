@@ -1,13 +1,15 @@
 import { Link } from 'react-router-dom'
 
-export default function Home(){
+export default function Home({user}){
   return (
     <>
-      <div className="text-end pe-3 my-3">
-        <Link to="/login"><button>Iniciar Sesión</button></Link>{' '}
-        <Link to="/registro"><button>Registrar Usuario</button></Link>
-      </div>
-
+      {/* Mostramos este div SÓLO si 'user' es null (nadie ha iniciado sesión) */}
+      {!user && (
+        <div className="text-end pe-3 my-3">
+          <Link to="/login"><button>Iniciar Sesión</button></Link>{' '}
+          <Link to="/registro"><button>Registrar Usuario</button></Link>
+        </div>
+      )}
       <div className="row align-items-center caja_tienda_online">
         <div className="col-md-6">
           <h2 className="titulo">TIENDA ONLINE</h2>

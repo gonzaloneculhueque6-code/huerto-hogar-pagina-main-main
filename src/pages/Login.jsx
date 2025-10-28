@@ -1,43 +1,80 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+
+// --- ¡LÓGICA MOVIDA AQUÍ! ---
+// Esta función ahora VIVE en Login.jsx y prepara el localStorage
+const getInitialUsers = () => {
+  try {
+    const guardados = JSON.parse(localStorage.getItem('usuarios') || '[]');
+    
+    // Si localStorage está vacío, crea el admin por defecto
+    if (!Array.isArray(guardados) || guardados.length === 0) {
+      const RUTA_IMAGEN_DEFAULT = '/assets/LUCIANO.PNG'; // Usa la ruta correcta
+      const adminUser = {
+        nombre: 'Admin', apellidos: 'Principal', rut: '1-9',
+        correo: 'huertohogar@gmail.com', contrasena: 'admin123',
+        direccion: 'N/A', telefono: '', region: '', comuna: '',
+        rol: 'admin',
+        imagen: RUTA_IMAGEN_DEFAULT
+      };
+      // Guarda el admin en localStorage
+      localStorage.setItem('usuarios', JSON.stringify([adminUser]));
+      console.log('Login: localStorage vacío, admin creado.');
+    }
+  } catch (error) {
+    console.error("Error al inicializar usuarios:", error);
+  }
+};
+// --- FIN DE LA LÓGICA MOVIDA ---
 
 
 export default function Login({ setUser }) {
-  const [correo, setCorreo] = useState('')
-  const [contrasena, setContrasena] = useState('')
-  const navigate = useNavigate()
-  const [error, setError] = useState(false)
+  const [correo, setCorreo] = useState('');
+  const [contrasena, setContrasena] = useState('');
+  const navigate = useNavigate();
+  const [error, setError] = useState(false);
 
   const ingresar = (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    // Valida que los campos no estén vacíos
+    // 1. Valida que los campos no estén vacíos
     if (!correo || !contrasena) {
       setError(true);
       return;
     }
     setError(false);
 
-    // LÓGICA DE ADMINISTRADOR
-    if (correo === 'huertohogar@gmail.com' && contrasena === 'admin123') {
-      alert('¡Bienvenido, Administrador!')
+    // --- ¡CORRECCIÓN AQUÍ! ---
+    // 2. Llama a getInitialUsers() ANTES de buscar.
+    // Esto asegura que el admin exista si es un PC nuevo.
+    getInitialUsers();
+    
+    // 3. Lee la lista ACTUALIZADA de usuarios
+    const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+    
+    // 4. Busca al usuario que coincida EXACTAMENTE con correo Y contraseña
+    const usuarioEncontrado = usuarios.find(u => u.correo === correo && u.contrasena === contrasena);
 
-      setUser({ rol: 'admin', nombre: 'Admin' })
+    // 5. Verifica si se encontró un usuario
+    if (usuarioEncontrado) {
+      // Si se encontró: ÉXITO
+      alert(`¡Bienvenido/a, ${usuarioEncontrado.nombre}!`);
+      
+      // Guardamos el objeto COMPLETO (incluyendo la contraseña) en el estado
+      setUser(usuarioEncontrado);
 
-      navigate('/administrador')
-      return
-    }
+      // Redirige según el ROL
+      if (usuarioEncontrado.rol === 'admin') {
+        navigate('/administrador');
+      } else {
+        navigate('/');
+      }
 
-
-    const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]')
-    const ok = usuarios.find(u => u.correo === correo && u.contrasena === contrasena)
-    if (ok) {
-      alert(`¡Bienvenido, ${ok.nombre}!`)
-      setUser(ok)
-      navigate('/')
     } else {
-      alert('El correo o la contraseña son incorrectos.')
-      setError(true); // O puedes usar un estado para un mensaje de error diferente aquí
+      // Si no se encontró: ERROR
+      // (Ya no necesitamos duplicar la lógica aquí)
+      alert('El correo o la contraseña son incorrectos.');
+      setError(true);
     }
   }
 
@@ -60,7 +97,7 @@ export default function Login({ setUser }) {
               </div>
             </div>
             <div className="d-grid gap-2">
-              <button className="btn btn-success w-100">INICIAR SESIÓN</button>
+              <button className="button w-100">INICIAR SESIÓN</button>
             </div>
             <div className="text-center mt-3">
               <Link to="/registro" className="enlaces">Crear una nueva cuenta</Link>

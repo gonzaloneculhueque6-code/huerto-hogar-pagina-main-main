@@ -1,15 +1,127 @@
-import React, { useState } from 'react';
-import InventarioAdmin from '../components/InventarioAdmin.jsx';
-// 1. Añade 'Navigate' a tu importación
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 
-// 1. Importamos el archivo CSS
+// 1. IMPORTAMOS LOS COMPONENTES
+import InventarioAdmin from '../components/InventarioAdmin.jsx';
+import GestionUsuarios from '../components/GestionUsuarios.jsx';
+import GestionOrdenes from '../components/GestionOrdenes.jsx';
+import Reportes from '../components/Reportes.jsx';
+import ConfiguracionPerfil from '../components/ConfiguracionPerfil.jsx';
+
+import { productosIniciales } from '../data/productos.js';
 import '../styles/admin.css';
 import '../styles/estilo.css';
+
+// --- DATOS INICIALES DE PRODUCTOS ---
+const initialMappedProducts = productosIniciales.map(p => ({
+  id: p.id,
+  name: p.nombre,
+  stock: Number(p.stock || 0),
+  price: Number(p.precio || 0),
+  category: p.categoria,
+  description: p.descripcion,
+  criticalStock: Number(p.stockCritico || 0),
+  image: p.imagen || '/assets/LUCIANO.PNG'
+}));
+
+// --- (La función getInitialUsers se eliminó correctamente) ---
+
+// --- DATOS DE EJEMPLO PARA ÓRDENES ---
+const dummyOrders = [
+  { id: 'ORD-001', fecha: '2025-10-25T10:30:00Z', clienteEmail: 'cliente1@mail.com', estado: 'Pendiente', items: [{ id: 'PROD-001', name: 'Manzana', price: 1500, quantity: 2 }, { id: 'PROD-002', name: 'Lechuga', price: 800, quantity: 1 }] },
+  { id: 'ORD-002', fecha: '2025-10-24T14:00:00Z', clienteEmail: 'cliente2@mail.com', estado: 'Completado', items: [{ id: 'PROD-003', name: 'Semillas de Tomate', price: 1200, quantity: 5 }] },
+  { id: 'ORD-003', fecha: '2025-10-23T09:15:00Z', clienteEmail: 'cliente1@mail.com', estado: 'Enviado', items: [{ id: 'PROD-004', name: 'Tierra de Hojas', price: 5000, quantity: 1 }] },
+];
+
+const getInitialOrders = () => {
+  try {
+    const guardadas = JSON.parse(localStorage.getItem('ordenes') || '[]');
+    if (!Array.isArray(guardadas) || guardadas.length === 0) {
+      localStorage.setItem('ordenes', JSON.stringify(dummyOrders));
+      return dummyOrders;
+    }
+    return guardadas;
+  } catch (error) {
+    console.error("Error al cargar órdenes:", error);
+    localStorage.setItem('ordenes', JSON.stringify(dummyOrders));
+    return dummyOrders;
+  }
+};
+
 
 export default function Administrador({ user, setUser }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // ESTADOS PRINCIPALES
+  const [productos, setProductos] = useState(initialMappedProducts);
+  
+  // --- ¡¡LÍNEA CORREGIDA!! ---
+  // Esta era la línea que faltaba.
+  // Ahora solo lee de localStorage (Login.jsx se encarga de crearlos).
+  const [usuarios, setUsuarios] = useState(
+    JSON.parse(localStorage.getItem('usuarios') || '[]')
+  );
+  // --- FIN DE LA CORRECCIÓN ---
+
+  const [ordenes, setOrdenes] = useState(getInitialOrders()); // <-- NUEVO ESTADO
+  
+  const [stats, setStats] = useState({
+    compras: 0,
+    totalProductos: 0,
+    inventarioTotal: 0,
+    totalUsuarios: 0
+  });
+
+  // --- 3. ACTUALIZAMOS EL USEEFFECT DE STATS ---
+  useEffect(() => {
+    const totalProductos = productos.length;
+    const inventarioTotal = productos.reduce((acc, p) => acc + Number(p.stock || 0), 0);
+    // Esta línea ahora funcionará porque 'usuarios' está definido
+    const totalUsuarios = usuarios.length; 
+    const totalCompras = ordenes.length;
+
+    setStats({
+      compras: totalCompras,
+      totalProductos: totalProductos,
+      inventarioTotal: inventarioTotal,
+      totalUsuarios: totalUsuarios
+    });
+
+  }, [productos, usuarios, ordenes]); // 'usuarios' ahora es una dependencia válida
+
+  // Efectos para guardar en LocalStorage
+  useEffect(() => {
+    try {
+      if (Array.isArray(usuarios)) {
+        localStorage.setItem('usuarios', JSON.stringify(usuarios));
+      }
+    } catch (error) {
+      console.error("Error al guardar usuarios en localStorage:", error);
+    }
+  }, [usuarios]); // Esta dependencia ahora es válida
+
+  useEffect(() => {
+    try {
+      if (Array.isArray(productos)) {
+        localStorage.setItem('productos', JSON.stringify(productos));
+      }
+    } catch (error) {
+      console.error("Error al guardar productos en localStorage:", error);
+    }
+  }, [productos]);
+
+  // AÑADIMOS USEEFFECT PARA ÓRDENES
+  useEffect(() => {
+    try {
+      if (Array.isArray(ordenes)) {
+        localStorage.setItem('ordenes', JSON.stringify(ordenes));
+      }
+    } catch (error) {
+      console.error("Error al guardar órdenes en localStorage:", error);
+    }
+  }, [ordenes]);
+
 
   const handleLogout = () => {
     alert('Sesión cerrada');
@@ -17,86 +129,102 @@ export default function Administrador({ user, setUser }) {
     navigate("/");
   };
 
+  // --- 4. ACTUALIZAMOS RENDERCONTENT ---
+  // (Esta función ahora funcionará porque 'usuarios' está definido)
   const renderContent = () => {
     switch (activeTab) {
       case 'productos':
         return (
           <div>
-            <h2 className="mb-4">Gestión de Productos</h2>
-            <InventarioAdmin />
+            <h2 className="mb-4 titulo">Gestión de Productos</h2>
+            <InventarioAdmin
+              productos={productos}
+              setProductos={setProductos}
+            />
           </div>
         );
+      
       case 'ordenes':
-        return <h2 className="mb-4 titulo">Gestión de Órdenes (En desarrollo)</h2>;
-      case 'categorias':
-        return <h2 className="mb-4 titulo">Gestión de Categorías (En desarrollo)</h2>;
+        return <GestionOrdenes
+          ordenes={ordenes}
+          setOrdenes={setOrdenes}
+        />;
+      
       case 'usuarios':
-        return <h2 className="mb-4 titulo">Gestión de Usuarios (En desarrollo)</h2>;
+        return <GestionUsuarios
+          usuarios={usuarios}
+          setUsuarios={setUsuarios}
+          loggedInUser={user} 
+          setLoggedInUser={setUser} 
+        />;
+      
       case 'reportes':
-        return <h2 className="mb-4 titulo">Generación de Reportes (En desarrollo)</h2>;
+        return <Reportes
+          productos={productos}
+          usuarios={usuarios}
+          ordenes={ordenes} 
+        />;
+      
       case 'perfil':
-        return <h2 className="mb-4 titulo">Configuración de Perfil (En desarrollo)</h2>;
+        return <ConfiguracionPerfil
+          adminUser={user}
+          setAdminUser={setUser}
+          usuarios={usuarios}
+          setUsuarios={setUsuarios}
+        />;
+      
       case 'tienda':
-        
         return <Navigate to="/" replace />;
+      
       case 'dashboard':
       default:
         return (
           <>
             <h2 className="mb-4 titulo">Resumen de las actividades diarias</h2>
 
-            {/* FILA 1: TARJETAS DE RESUMEN (KPIs) */}
+            {/* TARJETAS DE RESUMEN (KPIs) */}
             <div className="row mb-4">
               <div className="col-md-4 mb-3">
-                {/* 2. Se reemplazó 'style' por 'className' */}
-                <div className="card text-white bg-primary shadow-sm kpi-card-compras">
+                <div className="card shadow-sm color-cartas">
                   <div className="card-body">
                     <div className="d-flex justify-content-between align-items-center">
-                      <h3 className="card-title">Compras</h3>
-                      <i className="fas fa-shopping-bag fa-2x"></i>
+                      <h3 className="card-title texto_pric">Compras</h3>
                     </div>
-                    <h1 className="display-4 texto_pric">0</h1>
+                    <h1 className="display-4 texto_pric">{stats.compras}</h1>
                   </div>
                 </div>
               </div>
 
               <div className="col-md-4 mb-3">
-                {/* 2. Se reemplazó 'style' por 'className' */}
-                <div className="card text-white shadow-sm kpi-card-productos">
+                <div className="card shadow-sm color-cartas">
                   <div className="card-body">
                     <div className="d-flex justify-content-between align-items-center">
-                      <h3 className="card-title">Productos</h3>
-                      <i className="fas fa-boxes fa-2x"></i>
+                      <h3 className="card-title texto_pric">Productos</h3>
                     </div>
-                    <h1 className="display-4 texto_pric">0</h1>
-                    <p className="card-text">Inventario actual: 0</p>
+                    <h1 className="display-4 texto_pric">{stats.totalProductos}</h1>
+                    <p className="card-text texto_pric">Inventario actual: {stats.inventarioTotal}</p>
                   </div>
                 </div>
               </div>
 
               <div className="col-md-4 mb-3">
-                {/* 2. Se reemplazó 'style' por 'className' */}
-                <div className="card text-white shadow-sm kpi-card-usuarios">
+                <div className="card text-white shadow-sm color-cartas">
                   <div className="card-body">
                     <div className="d-flex justify-content-between align-items-center">
-                      <h3 className="card-title">Usuarios</h3>
-                      <i className="fas fa-users fa-2x"></i>
+                      <h3 className="card-title texto_pric">Usuarios</h3>
                     </div>
-                    <h1 className="display-4 texto_pric">0</h1>
+                    <h1 className="display-4 texto_pric">{stats.totalUsuarios}</h1>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Sección: Tarjetas de acción */}
+            {/* Tarjetas de acción */}
             <h2 className="mb-4 mt-5 titulo">Acciones Rápidas</h2>
             <div className="row g-4">
-              
-              {/* 3. Se reemplazó 'style' por 'className="... action-card"' en todas las tarjetas */}
-              
+              {/* (El resto de las tarjetas de acción no cambia) */}
               <div className="col-md-3">
                 <div className="card text-center h-100 shadow-sm p-3 action-card" onClick={() => setActiveTab('dashboard')}>
-                  <i className="fas fa-tachometer-alt fa-3x text-primary mb-2"></i>
                   <h6 className="card-title titulo">Inicio</h6>
                   <p className="texto_pric">Visión general de todas las métricas y estadísticas clave.</p>
                 </div>
@@ -104,32 +232,20 @@ export default function Administrador({ user, setUser }) {
               
               <div className="col-md-3">
                 <div className="card text-center h-100 shadow-sm p-3 action-card" onClick={() => setActiveTab('ordenes')}>
-                  <i className="fas fa-shopping-cart fa-3x text-success mb-2"></i>
                   <h6 className="card-title titulo">Órdenes</h6>
                   <p className="texto_pric">Gestión y seguimiento de todas las órdenes de compra.</p>
                 </div>
               </div>
 
-              {/* --- Tarjetas completadas --- */}
               <div className="col-md-3">
                 <div className="card text-center h-100 shadow-sm p-3 action-card" onClick={() => setActiveTab('productos')}>
-                  <i className="fas fa-boxes fa-3x text-info mb-2"></i>
                   <h6 className="card-title titulo">Productos</h6>
                   <p className="texto_pric">Administrar el inventario, precios y detalles de productos.</p>
                 </div>
               </div>
 
               <div className="col-md-3">
-                <div className="card text-center h-100 shadow-sm p-3 action-card" onClick={() => setActiveTab('categorias')}>
-                  <i className="fas fa-tags fa-3x text-warning mb-2"></i>
-                  <h6 className="card-title titulo">Categorías</h6>
-                  <p className="texto_pric">Organizar y definir las categorías de los productos.</p>
-                </div>
-              </div>
-
-              <div className="col-md-3">
                 <div className="card text-center h-100 shadow-sm p-3 action-card" onClick={() => setActiveTab('usuarios')}>
-                  <i className="fas fa-users fa-3x text-danger mb-2"></i>
                   <h6 className="card-title titulo">Usuarios</h6>
                   <p className="texto_pric">Gestionar cuentas de clientes y administradores.</p>
                 </div>
@@ -137,7 +253,6 @@ export default function Administrador({ user, setUser }) {
               
               <div className="col-md-3">
                 <div className="card text-center h-100 shadow-sm p-3 action-card" onClick={() => setActiveTab('reportes')}>
-                  <i className="fas fa-chart-line fa-3x text-dark mb-2"></i>
                   <h6 className="card-title titulo">Reportes</h6>
                   <p className="texto_pric">Generar informes de ventas, stock y rendimiento.</p>
                 </div>
@@ -145,7 +260,6 @@ export default function Administrador({ user, setUser }) {
               
               <div className="col-md-3">
                 <div className="card text-center h-100 shadow-sm p-3 action-card" onClick={() => setActiveTab('perfil')}>
-                  <i className="fas fa-user-circle fa-3x text-secondary mb-2"></i>
                   <h6 className="card-title titulo">Perfil</h6>
                   <p className="texto_pric">Ajustar la configuración de tu cuenta de administrador.</p>
                 </div>
@@ -153,13 +267,10 @@ export default function Administrador({ user, setUser }) {
               
               <div className="col-md-3">
                 <div className="card text-center h-100 shadow-sm p-3 action-card" onClick={() => setActiveTab('tienda')}>
-                  <i className="fas fa-store fa-3x text-muted mb-2"></i>
                   <h6 className="card-title titulo">Ver Tienda</h6>
                   <p className="texto_pric">Vista previa de cómo los clientes ven el sitio web.</p>
-                </div>
+                </div> 
               </div>
-              {/* --- Fin tarjetas completadas --- */}
-
             </div>
           </>
         );
@@ -167,14 +278,9 @@ export default function Administrador({ user, setUser }) {
   };
 
   return (
-    // 4. Se reemplazó 'style' por 'className'
     <div className="admin-container">
-
       {/* -------------------- BARRA DE NAVEGACIÓN SUPERIOR (NAVBAR) -------------------- */}
-      <nav
-        // 5. Se reemplazó 'style' por 'className'
-        className="navbar navbar-expand-lg navbar-light bg-light border-bottom fixed-top shadow-sm admin-navbar"
-      >
+      <nav className="navbar navbar-expand-lg navbar-light bg-light border-bottom fixed-top shadow-sm admin-navbar">
         <div className="container-fluid">
           
           <Link to="#" className="navbar-brand me-4">
@@ -182,6 +288,7 @@ export default function Administrador({ user, setUser }) {
           </Link>
 
           <ul className="navbar-nav me-auto mb-2 mb-lg-0 nav-pills">
+            {/* (El resto del Navbar no cambia) */}
             <li className="nav-item">
               <Link to="#" className={`nav-link text-dark ${activeTab === 'dashboard' ? 'active bg-primary text-white' : ''}`}
                 onClick={() => setActiveTab('dashboard')}>
@@ -198,12 +305,6 @@ export default function Administrador({ user, setUser }) {
               <Link to="#" className={`nav-link text-dark ${activeTab === 'productos' ? 'active bg-primary text-white' : ''}`}
                 onClick={() => setActiveTab('productos')}>
                 <i className="fas fa-boxes me-1"></i> Productos
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link to="#" className={`nav-link text-dark ${activeTab === 'categorias' ? 'active bg-primary text-white' : ''}`}
-                onClick={() => setActiveTab('categorias')}>
-                <i className="fas fa-tags me-1"></i> Categorías
               </Link>
             </li>
             <li className="nav-item">
@@ -234,7 +335,6 @@ export default function Administrador({ user, setUser }) {
               </Link>
             </li>
             <li className="nav-item">
-              {/* 6. Se eliminó el 'style' redundante. 'btn-danger' ya hace esto. */}
               <button className="btn btn-danger" onClick={handleLogout}>
                 <i className="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
               </button>
@@ -245,7 +345,6 @@ export default function Administrador({ user, setUser }) {
       </nav>
 
       {/* -------------------- CONTENIDO PRINCIPAL (DASHBOARD) -------------------- */}
-      {/* 7. Se reemplazó 'p-4' y 'style' por la clase 'admin-content-area' */}
       <div className="admin-content-area"> 
         {renderContent()}
       </div>
