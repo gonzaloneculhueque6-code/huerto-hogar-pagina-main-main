@@ -171,4 +171,5 @@ export default function PagoExitoso() {
       </div>
     </div>
   );
-}
+  
+} 
